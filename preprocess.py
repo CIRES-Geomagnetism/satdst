@@ -1,4 +1,6 @@
 import pandas as pd
+from scipy.stats import zscore
+
 
 def setup_trainFeature(df: pd.DataFrame, training_col: list)-> pd.DataFrame:
 
@@ -10,8 +12,6 @@ def setup_trainFeature(df: pd.DataFrame, training_col: list)-> pd.DataFrame:
     Returns:
         The dataframe of training data
     """
-
-
 
     return df.loc[:, training_col]
 
@@ -30,11 +30,36 @@ def split_train_test(filename: str)-> tuple [pd.DataFrame, pd.DataFrame]:
     traindf_front = df.loc[(df['Decyear'] < 2002.0)]
     traindf_back = df.loc[(df['Decyear'] > 2003.0)]
 
-    traindf = traindf_front + traindf_back
+    traindf = pd.concat([traindf_front, traindf_back], axis = 0)
 
     testdf = df.loc[(df['Decyear'] >= 2002.0) & (df['Decyear'] <= 2003.0)]
 
     return traindf, testdf
+
+def calc_zscore(df: pd.DataFrame):
+
+    """
+    z score transform
+    Args:
+        df: pandans dataframe
+
+    Returns:
+        The values in all of columns are transformed into z_score
+    """
+
+    for key in df.keys():
+        df[key] = zscore(df[key])
+
+    return df
+
+def generate_batch_sample(df: pd.DataFrame):
+
+
+
+
+
+
+
 
 
 
@@ -44,5 +69,5 @@ def split_train_test(filename: str)-> tuple [pd.DataFrame, pd.DataFrame]:
 
 # preprocess training data
 
-# z score transform
+
 # generate training batch size sample randomly
