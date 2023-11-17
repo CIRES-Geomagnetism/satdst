@@ -15,10 +15,10 @@ def setup_trainFeature(df: pd.DataFrame, training_col: list)-> pd.DataFrame:
 
     return df.loc[:, training_col]
 
-def split_train_test(filename: str)-> tuple [pd.DataFrame, pd.DataFrame]:
+def split_train_test(filename: str, train_ratio: float, val_ratio: float)-> tuple [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     """
-    Get all the training data except for 2002-2003. The original codes use 2002-2003 for test data
+    Split for training, validation and test dataset
     Args:
         filename: The filename of training data file
 
@@ -27,14 +27,16 @@ def split_train_test(filename: str)-> tuple [pd.DataFrame, pd.DataFrame]:
     """
 
     df = pd.read_csv(filename)
-    traindf_front = df.loc[(df['Decyear'] < 2002.0)]
-    traindf_back = df.loc[(df['Decyear'] > 2003.0)]
 
-    traindf = pd.concat([traindf_front, traindf_back], axis = 0)
+    N = len(df)
 
-    testdf = df.loc[(df['Decyear'] >= 2002.0) & (df['Decyear'] <= 2003.0)]
+    train2val = train_ratio + val_ratio
 
-    return traindf, testdf
+    traindf = df[0: int(N*train_ratio)]
+    valdf = df[int(N*train_ratio):int(N*train2val)]
+    testdf = df[int(N*train2val):]
+
+    return traindf, valdf, testdf
 
 def calc_zscore(df: pd.DataFrame):
 
@@ -52,7 +54,7 @@ def calc_zscore(df: pd.DataFrame):
 
     return df
 
-def generate_batch_sample(df: pd.DataFrame):
+
 
 
 

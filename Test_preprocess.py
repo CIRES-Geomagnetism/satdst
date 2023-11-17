@@ -11,36 +11,46 @@ class Test_proprecess(unittest.TestCase):
 
     def test_split_train_test(self):
 
-        traindf, testdf = split_train_test(self.filename)
+        train_ratio = 0.7
+        val_ratio = 0.2
 
-        df = traindf.loc[(traindf['Decyear'] >= 2002.0) & (traindf['Decyear'] <= 2003.0)]
+        traindf, valdf, testdf = split_train_test(self.filename, train_ratio, val_ratio)
+
 
         print(traindf)
 
-        self.assertEqual(len(df), 0)
-        self.assertEqual((len(traindf) + len(testdf)), 175320)
+
+        self.assertEqual((len(traindf) + len(valdf) + len(testdf)), 175320)
 
     def test_setup_trainFeature(self):
 
-        traindf, testdf = split_train_test(self.filename)
+        train_ratio = 0.7
+        val_ratio = 0.2
 
-        train = setup_trainFeature(traindf, self.train_col)
-        test = setup_trainFeature(testdf, self.train_col)
+        trainALL, valALL, testALL = split_train_test(self.filename, train_ratio, val_ratio)
 
-        self.assertTrue( ("Dst" in train.keys()))
+        train_df = setup_trainFeature(trainALL, self.train_col)
+        val_df = setup_trainFeature(valALL, self.train_col)
+        test_df = setup_trainFeature(testALL, self.train_col)
 
-
+        self.assertEqual(train_df.shape[1], len(self.train_col))
 
     def test_calc_zscore(self):
+        train_ratio = 0.7
+        val_ratio = 0.2
 
-        train_set, test_set = split_train_test(self.filename)
+        trainALL, valALL, testALL = split_train_test(self.filename, train_ratio, val_ratio)
 
-        traindf = setup_trainFeature(train_set, self.train_col)
-        testdf = setup_trainFeature(test_set, self.train_col)
+        train_df = setup_trainFeature(trainALL, self.train_col)
+        val_df = setup_trainFeature(valALL, self.train_col)
+        test_df = setup_trainFeature(testALL, self.train_col)
 
-        traindf = calc_zscore(traindf)
+        train_df = calc_zscore(train_df)
 
-        print(traindf["Dst"])
+        print(train_df["Dst"])
+
+
+
 
 
 
