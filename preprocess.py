@@ -15,13 +15,16 @@ def setup_trainFeature(df: pd.DataFrame, training_col: list)-> pd.DataFrame:
 
     return df.loc[:, training_col]
 
-def split_train_test(filename: str, train_ratio: float, val_ratio: float)-> tuple [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def split_train_test(filename: str, train_ratio: float, val_ratio: float, train_col: list)-> tuple [pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     """
     Split for training, validation and test dataset
     Args:
         filename: The filename of training data file
-
+        train_ratio: The ratio for splitting into training data
+        val_ratio: The ratio for splitting into validation data
+        test_ratio: The ratio for splitting into test data
+        train_cols: The columns used for training
     Returns:
         The train dataframe and test dataframe
     """
@@ -36,32 +39,36 @@ def split_train_test(filename: str, train_ratio: float, val_ratio: float)-> tupl
     valdf = df[int(N*train_ratio):int(N*train2val)]
     testdf = df[int(N*train2val):]
 
+    traindf = setup_trainFeature(traindf, train_col)
+    valdf = setup_trainFeature(valdf, train_col)
+    testdf = setup_trainFeature(testdf, train_col)
+
     return traindf, valdf, testdf
 
-def calc_zscore(df: pd.DataFrame):
+def normalize(traindf: pd.DataFrame, valdf: pd.DataFrame, testdf: pd.DataFrame):
 
     """
     z score transform
     Args:
-        df: pandans dataframe
+        traindf: training dataframe
+        valdf: validation dataframe
+        testdf: test dataframe
 
     Returns:
         The values in all of columns are transformed into z_score
     """
 
-    for key in df.keys():
-        df[key] = zscore(df[key])
+    # The mean and standard deviation should only be computed using the training data
+    # so that the models have no access to the values in the validation and test sets.
 
-    return df
+    train_mean = traindf.mean()
+    train_std = traindf.std()
 
+    traindf = (traindf - train_mean)/train_std
+    valdf = (valdf - train_mean) / train_std
+    testdf = (testdf - train_mean) / train_std
 
-
-
-
-
-
-
-
+    return traindf, valdf, testdf
 
 
 
@@ -69,7 +76,14 @@ def calc_zscore(df: pd.DataFrame):
 
 
 
-# preprocess training data
 
 
-# generate training batch size sample randomly
+
+
+
+
+
+
+
+
+
