@@ -5,9 +5,10 @@ import tensorflow as tf
 import preprocess
 from data_windowing import WindowGenerator
 from Baseline import Baseline
+from MLmodel import Encoder
 
 
-class TestBaseline(unittest.TestCase):
+class TestMLModel(unittest.TestCase):
 
     def setUp(self) -> None:
         self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
@@ -30,7 +31,7 @@ class TestBaseline(unittest.TestCase):
         self.wg = WindowGenerator(input_width, label_width, shift,
                              self.traindf, self.valdf, self.testdf, label_columns)
 
-    def test_model_compile(self):
+    def test_BaselineModel_compile(self):
 
         col_indcs = tf.constant(self.wg.label_indices, dtype=np.int64)
 
@@ -42,6 +43,36 @@ class TestBaseline(unittest.TestCase):
 
         val_performance['Baseline'] = baseline.evaluate(self.wg.validation)
         performance['Baseline'] = baseline.evaluate(self.wg.test, verbose = 0)
+
+
+    def test_GRULayer(self):
+
+        inputs = tf.random.normal([32, 10, 8])
+        gru = tf.keras.layers.GRU(4, return_sequences=True, return_state=True)
+
+        whole_sequence_output, final_state = gru(inputs)
+        print(whole_sequence_output.shape)
+        print(final_state.shape)
+
+    def test_Bidirectional(self):
+
+        inputs = tf.random.normal([32, 10, 8])
+        biGRU = tf.keras.layers.Bidirectional(
+            merge_mode='sum',
+            layer=tf.keras.layers.GRU(32,
+                                      # Return the sequence and state
+
+                                      return_sequences=True,
+                                      recurrent_initializer='glorot_uniform'))
+
+        whole_sequence_output = biGRU(inputs)
+        print(whole_sequence_output.shape)
+        print(whole_sequence_output[0])
+
+
+
+
+
 
 
 
