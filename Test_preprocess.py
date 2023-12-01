@@ -67,7 +67,7 @@ class Test_data_windowing(unittest.TestCase):
     def test_setup_WindowGenerator(self):
 
         input_width = 30
-        label_width = 1
+        label_width = 30
         shift = 1
         label_columns = ["Dst"]
 
@@ -107,7 +107,7 @@ class Test_data_windowing(unittest.TestCase):
 
     def test_property_train(self):
         input_width = 32
-        label_width = 1
+        label_width = 32
         shift = 1
         label_columns = ["Dst"]
 
@@ -116,11 +116,17 @@ class Test_data_windowing(unittest.TestCase):
 
         trainSet = wg.train
 
+
+
+        print(labels)
+
+
         for example_inputs, example_labels in trainSet.take(1):
             print(f"Inputs shape (batch, time, features): {example_inputs.shape}")
             print(f"Labels shape (batch, time, features): {example_labels.shape}")
 
-        wg.plot()
+
+
 
 
 

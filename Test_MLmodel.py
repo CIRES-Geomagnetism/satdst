@@ -48,9 +48,10 @@ class TestMLModel(unittest.TestCase):
     def test_GRULayer(self):
 
         inputs = tf.random.normal([32, 10, 8])
-        gru = tf.keras.layers.GRU(4, return_sequences=True, return_state=True)
+        gru = tf.keras.layers.GRU(4, return_state=True)
 
         whole_sequence_output, final_state = gru(inputs)
+        print(whole_sequence_output)
         print(whole_sequence_output.shape)
         print(final_state.shape)
 
@@ -68,6 +69,14 @@ class TestMLModel(unittest.TestCase):
         whole_sequence_output = biGRU(inputs)
         print(whole_sequence_output.shape)
         print(whole_sequence_output[0])
+
+    def test_Encoder(self):
+
+        encoder = Encoder(32)
+        for inputs, labels in self.wg.train.take(1):
+            encode_outputs, states = encoder(inputs)
+
+        print(states)
 
 
 

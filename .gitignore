@@ -1,0 +1,9 @@
+.DS_Store
+.idea/
+.project
+.pydevproject
+client_secret_1.json
+cloud_test.csv
+quickstart_1.py
+
+SatDst/
