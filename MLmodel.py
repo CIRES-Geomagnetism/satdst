@@ -89,38 +89,6 @@ class Decoder(tf.keras.layers.Layer):
 
 
 
-class GRUNetwork(tf.keras.Model):
-    def __init__(self, rnn_units):
-        super().__init__(self)
-
-        encoder = Encoder(rnn_units)
-
-        self.encoder = encoder
-
-        self.gru = tf.keras.layers.GRU(rnn_units,
-                                       return_sequences=True,
-                                       return_state=True)
-        self.attention = BahdanauAttention(rnn_units)
-        self.dense = tf.keras.layers.Dense(units=1)
-
-    def call(self, x, enc_states, enc_output):
-
-        context_vector, att_weights = self.attention(enc_states, enc_output)
-
-        #x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
-
-        output, state = self.gru(context_vector)
-
-        #output = tf.reshape(output, (-1, output.shape[2]))
-
-
-
-
-        x = self.dense(output)
-
-        return x, state, att_weights
-
-
 
 
 
