@@ -5,7 +5,8 @@ import tensorflow as tf
 import preprocess
 from data_windowing import WindowGenerator
 from Baseline import Baseline
-from MLmodel import Encoder, GRUNetwork, BahdanauAttention, CrossAttention
+import MLmodel
+from MLmodel import Encoder, GRUNetwork, BahdanauAttention, CrossAttention, Decoder
 
 
 class TestMLModel(unittest.TestCase):
@@ -112,7 +113,18 @@ class TestMLModel(unittest.TestCase):
             print(f"Attention Output shape: {att_output.shape}")
 
 
+    def test_Decoder(self):
 
+        encoder = Encoder(32)
+        decoder = Decoder(32)
+
+        for inputs, labels in self.wg.train.take(1):
+            enc_output = encoder(inputs)
+            logits = decoder(labels, enc_output)
+
+            print(f'encoder output shape: (batch, s, units) {enc_output.shape}')
+            print(f'input target tokens shape: (batch, t) {labels.shape}')
+            print(f'logits shape shape: (batch, target_vocabulary_size) {logits.shape}')
 
 
 

@@ -66,6 +66,28 @@ class BahdanauAttention(tf.keras.layers.Layer):
 
         return context_vector, weights
 
+class Decoder(tf.keras.layers.Layer):
+
+    def __init__(self, units):
+        super(Decoder, self).__init__()
+
+        self.gru = tf.keras.layers.GRU(units, return_sequences=True,
+                                   return_state=True,
+                                   recurrent_initializer='glorot_uniform')
+        self.att = CrossAttention(units)
+        self.output_layer = tf.keras.layers.Dense(1)
+
+    def call(self, x, context, state=None):
+
+        x, state = self.gru(x, initial_state=state)
+
+        x = self.att(x, context)
+
+        logits = self.output_layer(x)
+
+        return logits
+
+
 
 class GRUNetwork(tf.keras.Model):
     def __init__(self, rnn_units):
