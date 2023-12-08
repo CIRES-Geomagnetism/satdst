@@ -103,11 +103,12 @@ class Test_data_windowing(unittest.TestCase):
 
         train_set = wg.make_dataset(self.traindf)
 
+        print(train_set)
         print(train_set.element_spec)
 
     def test_property_train(self):
-        input_width = 32
-        label_width = 32
+        input_width = 30
+        label_width = 30
         shift = 1
         label_columns = ["Dst"]
 
@@ -115,10 +116,6 @@ class Test_data_windowing(unittest.TestCase):
                              self.traindf, self.valdf, self.testdf, label_columns)
 
         trainSet = wg.train
-
-
-
-        print(labels)
 
 
         for example_inputs, example_labels in trainSet.take(1):

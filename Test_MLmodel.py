@@ -5,7 +5,7 @@ import tensorflow as tf
 import preprocess
 from data_windowing import WindowGenerator
 from Baseline import Baseline
-from MLmodel import Encoder
+from MLmodel import Encoder, GRUNetwork, BahdanauAttention, CrossAttention
 
 
 class TestMLModel(unittest.TestCase):
@@ -57,7 +57,7 @@ class TestMLModel(unittest.TestCase):
 
     def test_Bidirectional(self):
 
-        inputs = tf.random.normal([32, 10, 8])
+        #inputs = tf.random.normal([32, 10, 8])
         biGRU = tf.keras.layers.Bidirectional(
             merge_mode='sum',
             layer=tf.keras.layers.GRU(32,
@@ -66,17 +66,68 @@ class TestMLModel(unittest.TestCase):
                                       return_sequences=True,
                                       recurrent_initializer='glorot_uniform'))
 
-        whole_sequence_output = biGRU(inputs)
-        print(whole_sequence_output.shape)
-        print(whole_sequence_output[0])
+        for inputs, labels in self.wg.train.take(1):
+            whole_sequence_output = biGRU(inputs)
+
+            print(whole_sequence_output.shape)
+
 
     def test_Encoder(self):
 
         encoder = Encoder(32)
+        for (batch_n, (inputs, labels)) in enumerate(self.wg.train.take(1)):
+            encode_outputs = encoder(inputs)
+
+
+            print(encode_outputs.shape)
+
+
+
+    def test_BahdanauAttention(self):
+        encoder = Encoder(32)
+        att = BahdanauAttention(32)
+
         for inputs, labels in self.wg.train.take(1):
             encode_outputs, states = encoder(inputs)
 
-        print(states)
+            context_vector, weights = att(states, encode_outputs)
+
+            print(f"enc_output shape: {encode_outputs.shape}")
+            print(f"context_vector shape: {context_vector.shape}")
+
+    def test_CrossArrention(self):
+
+        att = CrossAttention(32)
+
+        embed = tf.keras.layers.Embedding(50,
+                                          output_dim=6, mask_zero=True)
+        encoder = Encoder(32)
+
+        for inputs, labels in self.wg.train.take(1):
+            #inputs_embed = embed(inputs)
+            enc_output = encoder(inputs)
+            att_output = att(inputs, enc_output)
+
+
+            print(f"Attention Output shape: {att_output.shape}")
+
+
+
+
+
+
+
+    def test_ModelBuild(self):
+
+        encoder = Encoder(32)
+        model = GRUNetwork(32)
+
+        for (batch_n, (inputs, labels)) in enumerate(self.wg.train.take(1)):
+            encode_outputs, states = encoder(inputs)
+            pred = model(labels, states, encode_outputs)
+
+        print(model.summary())
+
 
 
 
