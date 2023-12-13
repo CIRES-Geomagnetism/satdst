@@ -1,3 +1,5 @@
+import time
+
 import tensorflow as tf
 from MLmodel import Encoder, Decoder
 
@@ -25,23 +27,25 @@ class GRUNetwork():
         self.decoder = Decoder(units)
 
         self.optimizer = optimizer
+        self.loss = tf.keras.losses.MeanSquaredError()
 
-    @tf.function
+
     def train_step(self, inputs, labels):
 
-        with tf.GradientTape as tape:
+        with tf.GradientTape() as tape:
 
             enc_output = self.encoder(inputs)
             logits = self.decoder(labels, enc_output)
 
-            loss = self.loss_function(labels, logits)
 
 
-
+            loss = self.loss(labels, logits)
 
         trained_variables = self.encoder.trainable_variables + self.decoder.trainable_variables
         grads = tape.gradient(loss, trained_variables)
         self.optimizer.apply_gradients(zip(grads, trained_variables))
+
+        return loss
 
 
     def loss_function(self, y_true, y_pred):
@@ -52,9 +56,41 @@ class GRUNetwork():
 
         # Mask off the losses on padding.
         mask = tf.cast(y_true != 0, loss.dtype)
+
+
         loss *= mask
+
+
 
         # Return the total.
         return tf.reduce_sum(loss) / tf.reduce_sum(mask)
+
+    def train(self, epochs, trainset):
+
+
+
+        for epoch in range(epochs):
+
+            start = time.time()
+
+            batch_loss = 0
+
+
+            for (batch_n, (inputs, labels)) in enumerate(trainset):
+
+                loss = self.train_step(inputs, labels)
+
+
+
+
+                if batch_n % 100 == 0:
+                    print(f"Epoch {epoch+1} Batch {batch_n} Loss {loss:.4f}")
+            print()
+            #print(f"Epoch {epoch+1} Loss: {mean.results.numpy():.4f}")
+            print(f"Time taken from 1 epoch {time.time() - start:.2f} sec")
+            print("_"*50)
+
+
+
 
 

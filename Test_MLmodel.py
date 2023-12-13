@@ -6,7 +6,8 @@ import preprocess
 from data_windowing import WindowGenerator
 from Baseline import Baseline
 import MLmodel
-from MLmodel import Encoder, GRUNetwork, BahdanauAttention, CrossAttention, Decoder
+from MLmodel import Encoder, BahdanauAttention, CrossAttention, Decoder
+from train import GRUNetwork
 
 
 class TestMLModel(unittest.TestCase):
@@ -125,20 +126,57 @@ class TestMLModel(unittest.TestCase):
             print(f'encoder output shape: (batch, s, units) {enc_output.shape}')
             print(f'input target tokens shape: (batch, t) {labels.shape}')
             print(f'logits shape shape: (batch, target_vocabulary_size) {logits.shape}')
+            print(f"logits[0]: {logits[0]}")
 
 
 
 
-    def test_ModelBuild(self):
 
-        encoder = Encoder(32)
-        model = GRUNetwork(32)
+class Test_Train(unittest.TestCase):
 
-        for (batch_n, (inputs, labels)) in enumerate(self.wg.train.take(1)):
-            encode_outputs, states = encoder(inputs)
-            pred = model(labels, states, encode_outputs)
+    def setUp(self) -> None:
+        self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
+        self.train_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
 
-        print(model.summary())
+        train_ratio = 0.7
+        val_ratio = 0.2
+
+        input_width = 30
+        label_width = 30
+        shift = 1
+        label_columns = ["Dst"]
+
+        trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.train_col)
+
+        self.traindf, self.valdf, self.testdf = preprocess.normalize(trainALL, valALL, testALL)
+
+        self.wg = WindowGenerator(input_width, label_width, shift,
+                                  self.traindf, self.valdf, self.testdf, label_columns)
+
+
+        self.optimizer = tf.keras.optimizers.Adam()
+
+    def test_loss_fun(self):
+
+
+        model = GRUNetwork(32, self.optimizer)
+
+        for inputs, labels in self.wg.train.take(1):
+            model.train_step(inputs, labels)
+
+
+    def test_train(self):
+
+
+
+        epochs = 1
+
+
+        model = GRUNetwork(32, self.optimizer)
+
+        model.train(epochs, self.wg.train)
+
+
 
 
 
