@@ -7,7 +7,7 @@ from data_windowing import WindowGenerator
 from Baseline import Baseline
 import MLmodel
 from MLmodel import Encoder, BahdanauAttention, CrossAttention, Decoder, GRUNetwork
-from train import train, valid_model
+from train import train, valid_model, compile_and_fit
 
 
 class TestMLModel(unittest.TestCase):
@@ -167,19 +167,30 @@ class Test_Train(unittest.TestCase):
 
     def test_train(self):
         optimizer = tf.keras.optimizers.Adam()
-        epochs = 1
+        epochs = 2
 
         train(epochs, self.wg, optimizer)
 
     def test_valid_model(self):
 
-        optimizer = tf.keras.optimizers.Adam()
 
-        model = GRUNetwork(32, optimizer)
+
+        model = GRUNetwork(32)
 
         valid_loss = valid_model(model, self.wg.validation, loss_fn=tf.keras.losses.MeanSquaredError())
 
         print(f"Loss: {valid_loss.result():.4f}")
+
+    def test_compile_and_fit(self):
+
+        model = GRUNetwork(32)
+        epochs = 1
+
+
+        history = compile_and_fit(model, self.wg, epochs= epochs)
+
+
+
 
 
 

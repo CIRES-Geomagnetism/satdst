@@ -72,7 +72,7 @@ def train(epochs, dataset, optimizer):
     train_loss = tf.metrics.Mean()
     loss_fn = tf.keras.losses.MeanSquaredError()
 
-    model= GRUNetwork(32, optimizer)
+    model= GRUNetwork(32)
     loss_history = deque(maxlen=patience+1)
 
     for epoch in range(epochs):
@@ -100,6 +100,23 @@ def train(epochs, dataset, optimizer):
         print(f"Epoch {epoch + 1} Loss: {valid_loss.result():.4f}")
         print(f"Time taken from 1 epoch {time.time() - start:.2f} sec")
         print("_"*50)
+
+def compile_and_fit(model, dataset, epochs):
+
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                                      patience=3,
+                                                      mode='min')
+
+    model.compile(optimizer='adam', loss=tf.keras.losses.MeanSquaredError(),
+                  metrics=[tf.keras.metrics.MeanAbsoluteError()])
+
+
+    history = model.fit(dataset.train.repeat(), epochs=epochs, steps_per_epoch = 100, validation_data=dataset.validation, callbacks=[early_stopping], batch_size=30)
+
+    return history
+
+#def loss_fn():
+    # L2 loss
 
 
 

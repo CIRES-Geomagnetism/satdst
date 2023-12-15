@@ -90,16 +90,17 @@ class Decoder(tf.keras.layers.Layer):
 
 class GRUNetwork(tf.keras.Model):
 
-    def __init__(self, units, optimizer):
+    def __init__(self, units):
         super().__init__(self)
 
         self.encoder = Encoder(units)
         self.decoder = Decoder(units)
 
-        self.optimizer = optimizer
-        self.loss = tf.keras.losses.MeanSquaredError()
+
 
     def call(self, inputs, labels):
+
+
 
         enc_output = self.encoder(inputs)
         logits = self.decoder(labels, enc_output)
