@@ -1,7 +1,8 @@
 import time
+from collections import deque
 
 import tensorflow as tf
-from MLmodel import Encoder, Decoder
+from MLmodel import Encoder, Decoder, GRUNetwork
 
 
 ########### ML Model ###############################
@@ -18,77 +19,87 @@ from MLmodel import Encoder, Decoder
 
 
 
-
-class GRUNetwork():
-
-    def __init__(self, units, optimizer):
-
-        self.encoder = Encoder(units)
-        self.decoder = Decoder(units)
-
-        self.optimizer = optimizer
-        self.loss = tf.keras.losses.MeanSquaredError()
-
-
-    def train_step(self, inputs, labels):
-
-        with tf.GradientTape() as tape:
-
-            enc_output = self.encoder(inputs)
-            logits = self.decoder(labels, enc_output)
+def gradientTape_train(inputs, labels, model, loss_fn, optimizer):
 
 
 
-            loss = self.loss(labels, logits)
-
-        trained_variables = self.encoder.trainable_variables + self.decoder.trainable_variables
-        grads = tape.gradient(loss, trained_variables)
-        self.optimizer.apply_gradients(zip(grads, trained_variables))
-
-        return loss
+    with tf.GradientTape() as tape:
 
 
-    def loss_function(self, y_true, y_pred):
-        # Calculate the loss for each item in the batch.
-        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True, reduction='none')
-        loss = loss_fn(y_true, y_pred)
+        logits = model(inputs, labels)
 
-        # Mask off the losses on padding.
-        mask = tf.cast(y_true != 0, loss.dtype)
+        loss = loss_fn(labels, logits)
 
 
-        loss *= mask
+    grads = tape.gradient(loss, model.trainable_variables)
+    optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
+    return loss
 
+def valid_model(model, validset, loss_fn):
+    valid_loss = tf.metrics.Mean()
 
-        # Return the total.
-        return tf.reduce_sum(loss) / tf.reduce_sum(mask)
+    for (batch_n, (inputs, labels)) in enumerate(validset):
+        logits = model(inputs, labels)
+        loss = loss_fn(labels, logits)
 
-    def train(self, epochs, trainset):
+        valid_loss.update_state(loss)
 
+    return valid_loss
 
+def early_stopping(loss_history, delta):
 
-        for epoch in range(epochs):
+    last_loss = loss_history.popleft()
+    min_loss = min(loss_history)
+    ratio = (min_loss - last_loss)/min_loss
 
-            start = time.time()
-
-            batch_loss = 0
-
-
-            for (batch_n, (inputs, labels)) in enumerate(trainset):
-
-                loss = self.train_step(inputs, labels)
+    if ratio < delta:
+        return True
+    else:
+        return False
 
 
 
 
-                if batch_n % 100 == 0:
-                    print(f"Epoch {epoch+1} Batch {batch_n} Loss {loss:.4f}")
-            print()
-            #print(f"Epoch {epoch+1} Loss: {mean.results.numpy():.4f}")
-            print(f"Time taken from 1 epoch {time.time() - start:.2f} sec")
-            print("_"*50)
+def train(epochs, dataset, optimizer):
+
+    patience = 3
+    delta = 0.001
+
+    trainset = dataset.train
+    validset = dataset.validation
+
+    train_loss = tf.metrics.Mean()
+    loss_fn = tf.keras.losses.MeanSquaredError()
+
+    model= GRUNetwork(32, optimizer)
+    loss_history = deque(maxlen=patience+1)
+
+    for epoch in range(epochs):
+
+        start = time.time()
+
+        train_loss.reset_states()
+
+        for (batch_n, (inputs, labels)) in enumerate(trainset):
+
+            loss = gradientTape_train(inputs, labels, model, loss_fn, optimizer)
+            train_loss.update_state(loss)
+
+            if batch_n % 100 == 0:
+                print(f"Epoch {epoch+1} Batch {batch_n} Loss {loss:.4f}")
+
+        valid_loss = valid_model(model, validset, loss_fn)
+        loss_history.append(valid_loss)
+
+        if len(loss_history) > patience:
+            if early_stopping(loss_history, delta):
+                print(f"Early Stopping. No improvement of more than {delta:.5%} in validation loss in the last {patience} epochs")
+                break
+
+        print(f"Epoch {epoch + 1} Loss: {valid_loss.result():.4f}")
+        print(f"Time taken from 1 epoch {time.time() - start:.2f} sec")
+        print("_"*50)
 
 
 
