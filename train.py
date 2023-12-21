@@ -1,5 +1,6 @@
 import time
 from collections import deque
+import pandas as pd
 
 import tensorflow as tf
 from MLmodel import Encoder, Decoder, GRUNetwork
@@ -27,7 +28,6 @@ def gradientTape_train(inputs, labels, model, loss_fn, optimizer):
 
 
         logits = model(inputs, labels)
-
         loss = loss_fn(labels, logits)
 
 
@@ -114,6 +114,18 @@ def compile_and_fit(model, dataset, epochs):
     history = model.fit(dataset.train.repeat(), epochs=epochs, steps_per_epoch = 100, validation_data=dataset.validation, callbacks=[early_stopping], batch_size=30)
 
     return history
+
+def evaluate(model: tf.keras.Model, inputs, true_df: pd.DataFrame):
+
+
+    predictions = model(inputs)
+
+    true_dst = true_df["DST"].values
+
+
+
+
+
 
 #def loss_fn():
     # L2 loss

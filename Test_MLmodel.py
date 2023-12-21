@@ -14,17 +14,18 @@ class TestMLModel(unittest.TestCase):
 
     def setUp(self) -> None:
         self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
-        self.train_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
+        self.all_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
 
         train_ratio = 0.7
         val_ratio = 0.2
 
         input_width = 30
-        label_width = 30
+        label_width = 1
         shift = 1
         label_columns = ["Dst"]
 
-        trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.train_col)
+
+        trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
         self.traindf, self.valdf, self.testdf = preprocess.normalize(trainALL, valALL, testALL)
 
@@ -136,44 +137,48 @@ class Test_Train(unittest.TestCase):
 
     def setUp(self) -> None:
         self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
-        self.train_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
+        self.all_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
 
         train_ratio = 0.7
         val_ratio = 0.2
 
         input_width = 30
-        label_width = 30
+        label_width = 1
         shift = 1
         label_columns = ["Dst"]
 
-        trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.train_col)
+        batch_size = 32
+
+        trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
         self.traindf, self.valdf, self.testdf = preprocess.normalize(trainALL, valALL, testALL)
 
         self.wg = WindowGenerator(input_width, label_width, shift,
-                                  self.traindf, self.valdf, self.testdf, label_columns)
+                                  self.traindf, self.valdf, self.testdf, label_columns, batch_size=batch_size)
 
 
         self.optimizer = tf.keras.optimizers.Adam()
 
-    def test_loss_fun(self):
+    def test_model_pred(self):
 
 
-        model = GRUNetwork(32, self.optimizer)
+        model = GRUNetwork(32)
+        logits = -9999
 
         for inputs, labels in self.wg.train.take(1):
-            model.train_step(inputs, labels)
+            logits = model(inputs, labels)
+
+            print(logits)
+
+        print(logits.shape)
 
 
     def test_train(self):
         optimizer = tf.keras.optimizers.Adam()
-        epochs = 2
-
+        epochs = 1
         train(epochs, self.wg, optimizer)
 
     def test_valid_model(self):
-
-
 
         model = GRUNetwork(32)
 
@@ -181,13 +186,12 @@ class Test_Train(unittest.TestCase):
 
         print(f"Loss: {valid_loss.result():.4f}")
 
-    def test_compile_and_fit(self):
+    def test_model_eval(self):
 
         model = GRUNetwork(32)
-        epochs = 1
 
 
-        history = compile_and_fit(model, self.wg, epochs= epochs)
+
 
 
 

@@ -7,12 +7,13 @@ class WindowGenerator():
   def __init__(self, input_width:int,
                label_width:int, shift:int,
                train_df:pd.DataFrame, val_df:pd.DataFrame, test_df:pd.DataFrame,
-               label_columns:list =None):
+               label_columns:list =None, batch_size=32):
 
     # Store the raw data.
     self.train_df = train_df
     self.val_df = val_df
     self.test_df = test_df
+
 
     # Work out the label column indices.
     self.label_columns = label_columns
@@ -21,6 +22,10 @@ class WindowGenerator():
                                     enumerate(label_columns)}
     self.column_indices = {name: i for i, name in
                            enumerate(train_df.columns)}
+
+    self.batch_size = batch_size
+
+
 
     # Work out the window parameters.
     self.input_width = input_width
@@ -83,7 +88,7 @@ class WindowGenerator():
           sequence_length=self.total_window_size,
           sequence_stride=1,
           shuffle=True,
-          batch_size=32, )
+          batch_size=self.batch_size, )
       # Map the value ds to the function split_window()
 
       ds = inputs.map(self.split_window)

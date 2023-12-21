@@ -52,12 +52,12 @@ class Test_data_windowing(unittest.TestCase):
     def setUp(self) -> None:
 
         self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
-        self.train_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
+        self.all_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
 
         train_ratio = 0.7
         val_ratio = 0.2
 
-        trainALL, valALL, testALL = split_train_test(self.filename, train_ratio, val_ratio, self.train_col)
+        trainALL, valALL, testALL = split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
 
 
@@ -72,8 +72,11 @@ class Test_data_windowing(unittest.TestCase):
         label_columns = ["Dst"]
 
 
+
         wg = WindowGenerator(input_width, label_width, shift,
                         self.traindf, self.valdf, self.testdf, label_columns)
+
+
 
         print(wg)
 
@@ -98,6 +101,7 @@ class Test_data_windowing(unittest.TestCase):
         shift = 1
         label_columns = ["Dst"]
 
+
         wg = WindowGenerator(input_width, label_width, shift,
                              self.traindf, self.valdf, self.testdf, label_columns)
 
@@ -108,9 +112,10 @@ class Test_data_windowing(unittest.TestCase):
 
     def test_property_train(self):
         input_width = 30
-        label_width = 30
+        label_width = 1
         shift = 1
         label_columns = ["Dst"]
+
 
         wg = WindowGenerator(input_width, label_width, shift,
                              self.traindf, self.valdf, self.testdf, label_columns)
@@ -121,6 +126,7 @@ class Test_data_windowing(unittest.TestCase):
         for example_inputs, example_labels in trainSet.take(1):
             print(f"Inputs shape (batch, time, features): {example_inputs.shape}")
             print(f"Labels shape (batch, time, features): {example_labels.shape}")
+
 
 
 
