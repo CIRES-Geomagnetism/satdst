@@ -75,7 +75,7 @@ class Decoder(tf.keras.layers.Layer):
                                    return_state=True,
                                    recurrent_initializer='glorot_uniform')
         self.att = CrossAttention(units)
-        self.output_layer = tf.keras.layers.Dense(1)
+        self.output_layer = tf.keras.layers.Dense(1, kernel_initializer=tf.initializers.TruncatedNormal(), bias_initializer=tf.initializers.Zeros())
 
     def call(self, x, context, state=None):
 

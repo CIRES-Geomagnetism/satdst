@@ -147,7 +147,7 @@ class Test_Train(unittest.TestCase):
         shift = 1
         label_columns = ["Dst"]
 
-        batch_size = 32
+        batch_size = 128
 
         trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
@@ -175,7 +175,7 @@ class Test_Train(unittest.TestCase):
 
     def test_train(self):
         optimizer = tf.keras.optimizers.Adam()
-        epochs = 1
+        epochs = 2
         train(epochs, self.wg, optimizer)
 
     def test_valid_model(self):

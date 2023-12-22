@@ -166,12 +166,12 @@ X_train_mean = np.zeros(X_train.shape[1])
 X_train_std = np.zeros(X_train.shape[1])
     ## z-score transform x 
 for i in range(X_train.shape[1]):
-    print(i)
+
     #print(X_train.shape[1])
     #X_train[:, i] = signal.detrend( X_train[:, i]) # detrending data
     X_train_mean[i] = X_train[:, i].mean()
     X_train_std[i] = X_train[:, i].std()
-    print(X_train_mean[i], X_train_std[i])
+
     X_train[:, i] = (X_train[:, i] - X_train_mean[i]) / X_train_std[i]
     X_test[:, i] = (X_test[:, i] - X_train_mean[i]) /  X_train_std[i]
     
@@ -185,7 +185,7 @@ yy_std = yy_test.std()
 yy_mean = yy_test.mean()
 yy_test = (yy_test - yy_mean) / yy_std
 
-print(y_mean,y_std,yy_std)
+
 
 def convert_partial_year(number):
 
@@ -223,12 +223,12 @@ def generate_test_samples(x = X_test, y = y_test, input_seq_len = input_seq_len,
     return input_seq, output_seq
 
 x, y = generate_train_samples(batch_size=1)
-print(x.shape, y.shape)
+
 
 test_x, test_y = generate_test_samples()
 test_xx, test_yy = generate_test_samples(X_test,yy_test,input_seq_len,output_seq_len)
 
-print(test_x.shape, test_y.shape)
+
 
 # num of input signals
 input_dim = X_train.shape[1]
@@ -425,14 +425,15 @@ with tf.Session() as sess:
 
     sess.run(init)
     
-    print("Training losses: ")
+
     for i in range(total_iterations):
         batch_input, batch_output = generate_train_samples(batch_size=batch_size)
         
         feed_dict = {rnn_model['enc_inp'][t]: batch_input[:,t] for t in range(input_seq_len)}
         feed_dict.update({rnn_model['target_seq'][t]: batch_output[:,t] for t in range(output_seq_len)})
         _, loss_t = sess.run([rnn_model['train_op'], rnn_model['loss']], feed_dict)
-        print(loss_t*y_std)
+        if i%1000 == 0:
+            print("Training losses at iteration ",i ,": ", loss_t*y_std)
         
     temp_saver = rnn_model['saver']()
     save_path = temp_saver.save(sess, os.path.join('./SatDst/', 'multivariate_ts_Dst'))
@@ -492,90 +493,3 @@ with tf.Session() as sess:
             # bin[i] prints RMS error between bins[i-1] and bins[i]. For the first case, it is
             # all values less than bin[i]. For last case
             print(bins[i],len(final_preds[binned_observations == i]), binned_rms[i], binned_rms_ref[i])
-           
-## Update Google Spreadsheet with the training results
-#===============================================================================
-# main(time.strftime("%m/%d/%Y"),
-#      input_seq_len,
-#          output_seq_len,
-#          batch_size ,
-#          total_iterations ,
-#          hidden_dim ,
-#          num_stacked_layers,
-#          learning_rate,
-#          lambda_l2_reg ,
-#          GRADIENT_CLIPPING,
-#          cols_to_train,
-#          TestYear ,
-#          rms_error ,
-#          mean_error,
-#          elapsed_time/60,
-#          binned_rms[1],
-#          binned_rms[2],
-#          binned_rms[3],
-#          binned_rms[4])
-#    
-#===============================================================================
-    
-## remove duplicate hours and concatenate into one long array
-test_y_expand = np.concatenate([test_y[i].reshape(-1) for i in range(0, test_y.shape[0], test_y.shape[1])], axis = 0)
-final_preds_expand = np.concatenate([final_preds[i].reshape(-1) for i in range(0, final_preds.shape[0], final_preds.shape[1])], axis = 0)
-test_yy_expand = np.concatenate([test_yy[i].reshape(-1) for i in range(0, test_yy.shape[0], test_yy.shape[1])], axis = 0)
-
-# Saving the objects:
-
-with open('./SatDst/session_variables_rc.pkl', 'wb') as f:  
-    pickle.dump((input_seq_len,
-          output_seq_len,
-          batch_size ,
-          total_iterations ,
-          hidden_dim ,
-          num_stacked_layers,
-          learning_rate,
-          lambda_l2_reg ,
-          GRADIENT_CLIPPING,
-          cols_to_train,
-          cols_to_train_array,
-          output_data ,
-          TestYear ,
-          rms_error ,
-          test_mean_error,
-          elapsed_time/60,
-          X_train_mean,
-          X_train_std,
-          y_mean,
-          y_std),
-          f,
-          protocol=2)
-
-#===============================================================================
-# Get the date axis
-date_x =df_test["Decyear"].values.copy()
-date_x = convert_partial_year(date_x[0:X_test.shape[0]-input_seq_len-output_seq_len])
-
-plt.plot_date(date_x,test_y_expand * y_std + y_mean, 'b-', label = output_data)
-plt.plot_date(date_x,final_preds_expand * y_std + y_mean, 'r-', label = 'ML predicted')
-plt.plot_date(date_x,test_yy_expand * yy_std + yy_mean, 'k-', label = reference_data)
-
-plt.title("%2d,%2d,%2d,%3d,%3d,%d,%7.5f,%7.5f,%4.2f,%s,%s,%5.2f,%6.2f" % (input_seq_len,
-         output_seq_len,
-         batch_size ,
-         total_iterations ,
-         hidden_dim ,
-         num_stacked_layers,
-         learning_rate,
-         lambda_l2_reg ,
-         GRADIENT_CLIPPING,
-         cols_to_train,
-         TestYear,
-         rms_error,
-         test_mean_error))
-plt.legend(loc="upper left")
-plt.xlabel('Date')
-plt.ylabel('Dst (nT)')
-plt.show()
-plt.savefig("./SatDst/prediction_plot.png")
-#===============================================================================
-
-
-
