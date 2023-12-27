@@ -1,3 +1,4 @@
+import os
 import time
 from collections import deque
 import pandas as pd
@@ -18,6 +19,14 @@ from MLmodel import Encoder, Decoder, GRUNetwork
 #GRADIENT_CLIPPING = 0.5
 ######################################################
 
+def save_weights(model, checkpoint_dir, epoch):
+
+    # Directory where the checkpoints will be saved
+    checkpoint_dir = checkpoint_dir
+    # Name of the checkpoint files
+    checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{epoch}")
+
+    model.save_weights(checkpoint_prefix.format(epoch=epoch))
 
 
 def gradientTape_train(inputs, labels, model, loss_fn, optimizer):
@@ -75,6 +84,8 @@ def train(epochs, dataset, optimizer):
     model= GRUNetwork(32)
     loss_history = deque(maxlen=patience+1)
 
+    checkpoint_dir = "Training_chekpt"
+
     for epoch in range(epochs):
 
         start = time.time()
@@ -89,6 +100,10 @@ def train(epochs, dataset, optimizer):
             if batch_n % 100 == 0:
                 print(f"Epoch {epoch+1} Batch {batch_n} Loss {loss:.4f}")
 
+            if epoch % 5 == 0:
+                save_weights(model, checkpoint_dir, epoch)
+
+
         valid_loss = valid_model(model, validset, loss_fn)
         loss_history.append(valid_loss)
 
@@ -100,6 +115,7 @@ def train(epochs, dataset, optimizer):
         print(f"Epoch {epoch + 1} Loss: {valid_loss.result():.4f}")
         print(f"Time taken from 1 epoch {time.time() - start:.2f} sec")
         print("_"*50)
+        save_weights(model, checkpoint_dir, epoch)
 
 def compile_and_fit(model, dataset, epochs):
 

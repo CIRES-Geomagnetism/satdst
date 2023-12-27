@@ -127,7 +127,7 @@ input_seq_len = input_seq_len
 output_seq_len = output_seq_len
 # Number of iterations
 
-total_iterations = 11000
+total_iterations = 1000
 
 #total_iterations = 7000
 # size of LSTM Cell
@@ -432,7 +432,7 @@ with tf.Session() as sess:
         feed_dict = {rnn_model['enc_inp'][t]: batch_input[:,t] for t in range(input_seq_len)}
         feed_dict.update({rnn_model['target_seq'][t]: batch_output[:,t] for t in range(output_seq_len)})
         _, loss_t = sess.run([rnn_model['train_op'], rnn_model['loss']], feed_dict)
-        if i%1000 == 0:
+        if i%100 == 0:
             print("Training losses at iteration ",i ,": ", loss_t*y_std)
         
     temp_saver = rnn_model['saver']()
@@ -453,9 +453,21 @@ with tf.Session() as sess:
     feed_dict = {rnn_model['enc_inp'][t]: test_x[:, t, :] for t in range(input_seq_len)} # batch prediction
     feed_dict.update({rnn_model['target_seq'][t]: np.zeros([test_x.shape[0], output_dim], dtype=np.float32) for t in range(output_seq_len)})
     final_preds = sess.run(rnn_model['reshaped_outputs'], feed_dict)
+
+
     
     final_preds = [np.expand_dims(pred, 1) for pred in final_preds]
     final_preds = np.concatenate(final_preds, axis = 1)
+
+
+
+    print("Final Preds: ", final_preds)
+    print("Final Preds Shape: ", final_preds.shape)
+
+    final_preds_expand = np.concatenate(
+        [final_preds[i].reshape(-1) for i in range(0, final_preds.shape[0], final_preds.shape[1])], axis=0)
+    print("final_preds_expand: ", final_preds_expand)
+    print("shape: ", final_preds_expand.shape)
     # mean error
     test_mean_error = np.mean(final_preds * y_std - test_y * y_std ) 
     # mean error

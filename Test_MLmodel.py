@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 import preprocess
 from data_windowing import WindowGenerator
@@ -186,9 +187,36 @@ class Test_Train(unittest.TestCase):
 
         print(f"Loss: {valid_loss.result():.4f}")
 
-    def test_model_eval(self):
+    def test_prediction(self):
 
         model = GRUNetwork(32)
+
+        input_width = 30
+        label_width = 1
+        shift = 1
+        label_columns = ["Dst"]
+
+        wg = WindowGenerator(input_width, label_width, shift,
+                                  self.traindf, self.valdf, self.testdf, label_columns, batch_size=128)
+
+        preds = []
+        true = []
+        for (inputs, labels) in wg.test.take(2):
+            pred = model(inputs, labels)
+
+        preds = np.array(pred)
+        true = np.array(labels)
+
+        plt.plot(preds.flatten())
+        plt.plot(true.flatten())
+        plt.show()
+
+
+
+
+
+
+
 
 
 
