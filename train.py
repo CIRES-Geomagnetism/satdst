@@ -70,7 +70,7 @@ def early_stopping(loss_history, delta):
 
 
 
-def train(epochs, dataset, optimizer):
+def train(epochs, dataset, optimizer, checkpoint_dir):
 
     patience = 3
     delta = 0.001
@@ -84,7 +84,7 @@ def train(epochs, dataset, optimizer):
     model= GRUNetwork(32)
     loss_history = deque(maxlen=patience+1)
 
-    checkpoint_dir = "Training_chekpt"
+
 
     for epoch in range(epochs):
 

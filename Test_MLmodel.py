@@ -149,6 +149,7 @@ class Test_Train(unittest.TestCase):
         label_columns = ["Dst"]
 
         batch_size = 128
+        self.checkpoint_dir = "Training_chekpt"
 
         trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
@@ -177,7 +178,7 @@ class Test_Train(unittest.TestCase):
     def test_train(self):
         optimizer = tf.keras.optimizers.Adam()
         epochs = 2
-        train(epochs, self.wg, optimizer)
+        train(epochs, self.wg, optimizer, self.checkpoint_dir)
 
     def test_valid_model(self):
 
@@ -199,17 +200,29 @@ class Test_Train(unittest.TestCase):
         wg = WindowGenerator(input_width, label_width, shift,
                                   self.traindf, self.valdf, self.testdf, label_columns, batch_size=128)
 
-        preds = []
-        true = []
-        for (inputs, labels) in wg.test.take(2):
+
+        latest = tf.train.latest_checkpoint(self.checkpoint_dir)
+        print(latest)
+        model.load_weights(latest)
+        for (inputs, labels) in wg.test.take(1):
             pred = model(inputs, labels)
+
+        results = model.evaluate(self.wg.test)
+
+        print(results)
 
         preds = np.array(pred)
         true = np.array(labels)
 
-        plt.plot(preds.flatten())
+        flat_preds = preds.flatten()
+
+        flat_preds = flat_preds*self.traindf["Dst"].std() + self.traindf["Dst"].mean()
+
+        plt.plot(flat_preds)
         plt.plot(true.flatten())
         plt.show()
+
+
 
 
 

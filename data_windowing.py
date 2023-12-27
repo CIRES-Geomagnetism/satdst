@@ -57,12 +57,16 @@ class WindowGenerator():
       Returns:
 
       """
+      training_columns = ["Bx", "By", "Bz", "Sv", "Den"]
       inputs = features[:, self.input_slice, :]
       labels = features[:, self.labels_slice, :]
       if self.label_columns is not None:
           labels = tf.stack(
               [labels[:, :, self.column_indices[name]] for name in self.label_columns],
               axis=-1)
+      inputs = tf.stack(
+          [inputs[:, :, self.column_indices[name]] for name in training_columns],
+          axis=-1)
 
       # Slicing doesn't preserve static shape information, so set the shapes
       # manually. This way the `tf.data.Datasets` are easier to inspect.
