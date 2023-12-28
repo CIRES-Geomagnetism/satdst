@@ -81,7 +81,7 @@ def train(epochs, dataset, optimizer, checkpoint_dir):
     train_loss = tf.metrics.Mean()
     loss_fn = tf.keras.losses.MeanSquaredError()
 
-    model= GRUNetwork(32)
+    model= GRUNetwork(256)
     loss_history = deque(maxlen=patience+1)
 
 

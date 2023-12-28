@@ -148,7 +148,7 @@ class Test_Train(unittest.TestCase):
         shift = 1
         label_columns = ["Dst"]
 
-        batch_size = 128
+        batch_size = 64
         self.checkpoint_dir = "Training_chekpt"
 
         trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
@@ -176,7 +176,7 @@ class Test_Train(unittest.TestCase):
 
 
     def test_train(self):
-        optimizer = tf.keras.optimizers.Adam()
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.00005)
         epochs = 2
         train(epochs, self.wg, optimizer, self.checkpoint_dir)
 
