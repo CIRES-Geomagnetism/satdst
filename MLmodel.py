@@ -7,7 +7,8 @@ class Encoder(tf.keras.layers.Layer):
 
         self.gru = tf.keras.layers.GRU(rnn_units,
                                       # Return the sequence and state
-                                      return_state=True,
+                                      return_sequences=True,
+
                                       recurrent_initializer='glorot_uniform')
 
         self.rnn = tf.keras.layers.Bidirectional(
@@ -95,18 +96,24 @@ class GRUNetwork(tf.keras.Model):
 
         self.encoder = Encoder(units)
         self.decoder = Decoder(units)
+        self.loss = tf.keras.losses.MeanSquaredError()
 
 
 
-    def call(self, inputs, labels):
+    def call(self, inputs):
 
-
+        inputs, labels = inputs
 
         enc_output = self.encoder(inputs)
         logits = self.decoder(labels, enc_output)
 
 
         return logits
+
+
+
+
+
 
 
 

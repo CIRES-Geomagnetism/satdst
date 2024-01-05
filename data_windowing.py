@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 class WindowGenerator():
   def __init__(self, input_width:int,
-               label_width:int, shift:int,
+               label_width:int, shift:int, train_col: list,
                train_df:pd.DataFrame, val_df:pd.DataFrame, test_df:pd.DataFrame,
                label_columns:list =None, batch_size=32):
 
@@ -24,6 +24,7 @@ class WindowGenerator():
                            enumerate(train_df.columns)}
 
     self.batch_size = batch_size
+    self.training_columns = train_col
 
 
 
@@ -37,15 +38,21 @@ class WindowGenerator():
     self.input_slice = slice(0, input_width)
     self.input_indices = np.arange(self.total_window_size)[self.input_slice]
 
-    self.label_start = self.total_window_size - self.label_width
-    self.labels_slice = slice(self.label_start, None)
+    self.label_start = input_width - 1
+    self.labels_slice = slice(self.label_start, self.label_start+1)
+
+    self.target_start = self.total_window_size - 1
+    self.target_slice = slice(self.target_start, None)
+
     self.label_indices = np.arange(self.total_window_size)[self.labels_slice]
+    self.target_indices = np.arange(self.total_window_size)[self.target_slice]
 
   def __repr__(self):
     return '\n'.join([
         f'Total window size: {self.total_window_size}',
         f'Input indices: {self.input_indices}',
         f'Label indices: {self.label_indices}',
+        f'Target indices: {self.target_indices}',
         f'Label column name(s): {self.label_columns}'])
 
   def split_window(self, features):
@@ -57,23 +64,30 @@ class WindowGenerator():
       Returns:
 
       """
-      training_columns = ["Bx", "By", "Bz", "Sv", "Den"]
+
       inputs = features[:, self.input_slice, :]
       labels = features[:, self.labels_slice, :]
-      if self.label_columns is not None:
-          labels = tf.stack(
-              [labels[:, :, self.column_indices[name]] for name in self.label_columns],
-              axis=-1)
+      targets = features[:, self.target_slice, :]
+
       inputs = tf.stack(
-          [inputs[:, :, self.column_indices[name]] for name in training_columns],
+          [inputs[:, :, self.column_indices[name]] for name in self.training_columns],
           axis=-1)
+
+      labels = tf.stack( [labels[:, :, self.column_indices[name]] for name in self.label_columns],
+              axis=-1)
+
+      targets = tf.stack(
+              [targets[:, :, self.column_indices[name]] for name in self.label_columns],
+              axis=-1)
 
       # Slicing doesn't preserve static shape information, so set the shapes
       # manually. This way the `tf.data.Datasets` are easier to inspect.
       inputs.set_shape([None, self.input_width, None])
       labels.set_shape([None, self.label_width, None])
+      targets.set_shape([None, self.label_width, None])
 
-      return inputs, labels
+
+      return (inputs, labels), targets
 
   def make_dataset(self, data):
       """

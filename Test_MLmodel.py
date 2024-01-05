@@ -8,7 +8,7 @@ from data_windowing import WindowGenerator
 from Baseline import Baseline
 import MLmodel
 from MLmodel import Encoder, BahdanauAttention, CrossAttention, Decoder, GRUNetwork
-from train import train, valid_model, compile_and_fit
+from train import train, valid_model, compile_and_fit, Training, save_weights
 
 
 class TestMLModel(unittest.TestCase):
@@ -16,6 +16,7 @@ class TestMLModel(unittest.TestCase):
     def setUp(self) -> None:
         self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
         self.all_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
+        self.train_col = ["Bx", "By", "Bz", "Sv", "Den"]
 
         train_ratio = 0.7
         val_ratio = 0.2
@@ -32,7 +33,7 @@ class TestMLModel(unittest.TestCase):
 
 
 
-        self.wg = WindowGenerator(input_width, label_width, shift,
+        self.wg = WindowGenerator(input_width, label_width, shift, self.train_col,
                              self.traindf, self.valdf, self.testdf, label_columns)
 
     def test_BaselineModel_compile(self):
@@ -71,6 +72,8 @@ class TestMLModel(unittest.TestCase):
                                       recurrent_initializer='glorot_uniform'))
 
         for inputs, labels in self.wg.train.take(1):
+
+            inputs, labels = inputs
             whole_sequence_output = biGRU(inputs)
 
             print(whole_sequence_output.shape)
@@ -79,7 +82,9 @@ class TestMLModel(unittest.TestCase):
     def test_Encoder(self):
 
         encoder = Encoder(32)
-        for (batch_n, (inputs, labels)) in enumerate(self.wg.train.take(1)):
+        for (batch_n, (inputs, targets)) in enumerate(self.wg.train.take(1)):
+
+            inputs, labels = inputs
             encode_outputs = encoder(inputs)
 
 
@@ -91,7 +96,9 @@ class TestMLModel(unittest.TestCase):
         encoder = Encoder(32)
         att = BahdanauAttention(32)
 
-        for inputs, labels in self.wg.train.take(1):
+        for inputs, targets in self.wg.train.take(1):
+
+            inputs, labels = inputs
             encode_outputs, states = encoder(inputs)
 
             context_vector, weights = att(states, encode_outputs)
@@ -107,8 +114,9 @@ class TestMLModel(unittest.TestCase):
                                           output_dim=6, mask_zero=True)
         encoder = Encoder(32)
 
-        for inputs, labels in self.wg.train.take(1):
+        for inputs, targets in self.wg.train.take(1):
             #inputs_embed = embed(inputs)
+            inputs, labels = inputs
             enc_output = encoder(inputs)
             att_output = att(inputs, enc_output)
 
@@ -121,12 +129,14 @@ class TestMLModel(unittest.TestCase):
         encoder = Encoder(32)
         decoder = Decoder(32)
 
-        for inputs, labels in self.wg.train.take(1):
+        for inputs, targets in self.wg.train.take(1):
+            inputs, labels = inputs
             enc_output = encoder(inputs)
             logits = decoder(labels, enc_output)
 
             print(f'encoder output shape: (batch, s, units) {enc_output.shape}')
             print(f'input target tokens shape: (batch, t) {labels.shape}')
+            print(f'target shape: (batch, t) {targets.shape}')
             print(f'logits shape shape: (batch, target_vocabulary_size) {logits.shape}')
             print(f"logits[0]: {logits[0]}")
 
@@ -139,6 +149,7 @@ class Test_Train(unittest.TestCase):
     def setUp(self) -> None:
         self.filename = "data/Solar_Wind_Dst_1997_2016_shifted_forward.csv"
         self.all_col = ["Bx", "By", "Bz", "Sv", "Den", "Dst"]
+        self.train_col = ["Bx", "By", "Bz", "Sv", "Den"]
 
         train_ratio = 0.7
         val_ratio = 0.2
@@ -148,14 +159,14 @@ class Test_Train(unittest.TestCase):
         shift = 1
         label_columns = ["Dst"]
 
-        batch_size = 64
+        batch_size = 128
         self.checkpoint_dir = "Training_chekpt"
 
         trainALL, valALL, testALL = preprocess.split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
         self.traindf, self.valdf, self.testdf = preprocess.normalize(trainALL, valALL, testALL)
 
-        self.wg = WindowGenerator(input_width, label_width, shift,
+        self.wg = WindowGenerator(input_width, label_width, shift, self.train_col,
                                   self.traindf, self.valdf, self.testdf, label_columns, batch_size=batch_size)
 
 
@@ -167,8 +178,9 @@ class Test_Train(unittest.TestCase):
         model = GRUNetwork(32)
         logits = -9999
 
-        for inputs, labels in self.wg.train.take(1):
-            logits = model(inputs, labels)
+        for inputs, targets in self.wg.train.take(1):
+
+            logits = model(inputs)
 
             print(logits)
 
@@ -176,7 +188,7 @@ class Test_Train(unittest.TestCase):
 
 
     def test_train(self):
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.00005)
+        optimizer = tf.keras.optimizers.Adam()
         epochs = 2
         train(epochs, self.wg, optimizer, self.checkpoint_dir)
 
@@ -197,22 +209,21 @@ class Test_Train(unittest.TestCase):
         shift = 1
         label_columns = ["Dst"]
 
-        wg = WindowGenerator(input_width, label_width, shift,
-                                  self.traindf, self.valdf, self.testdf, label_columns, batch_size=128)
 
 
         latest = tf.train.latest_checkpoint(self.checkpoint_dir)
         print(latest)
         model.load_weights(latest)
-        for (inputs, labels) in wg.test.take(1):
-            pred = model(inputs, labels)
+
+        for inputs, targets in self.wg.test.take(1):
+            pred = model(inputs)
 
         results = model.evaluate(self.wg.test)
 
-        print(results)
+
 
         preds = np.array(pred)
-        true = np.array(labels)
+        true = np.array(targets)
 
         flat_preds = preds.flatten()
 
@@ -221,6 +232,48 @@ class Test_Train(unittest.TestCase):
         plt.plot(flat_preds)
         plt.plot(true.flatten())
         plt.show()
+
+    def test_model_fit(self):
+
+        model = Training(32)
+
+        model.compile(optimizer = tf.keras.optimizers.Adam(), loss=tf.keras.losses.MeanSquaredError())
+
+        model.fit(self.wg.train, epochs=1, batch_size=128, validation_data= self.wg.validation)
+
+        save_weights(model, self.checkpoint_dir, epoch=1)
+
+
+    def test_model_test(self):
+
+        model = Training(32)
+
+        latest = tf.train.latest_checkpoint(self.checkpoint_dir)
+        print(latest)
+        model.load_weights(latest)
+
+        for inputs, targets in self.wg.test.take(1):
+            logits = model(inputs)
+            true = targets
+
+            print(f"logits's shape: {logits.shape}")
+            print(f"true result shape: {true.shape}")
+
+        preds = np.array(logits)
+        true = np.array(true)
+
+        flat_preds = preds.flatten()
+        true_dst = true.flatten()
+
+        print(f"pred length: {len(flat_preds)} true length: {len(true_dst)}")
+
+
+        plt.plot(flat_preds)
+        plt.plot(true.flatten())
+        plt.show()
+
+
+
 
 
 

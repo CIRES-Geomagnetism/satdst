@@ -138,15 +138,39 @@ def evaluate(model: tf.keras.Model, inputs, true_df: pd.DataFrame):
 
     true_dst = true_df["DST"].values
 
+class Training(GRUNetwork):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.loss_tracker = tf.keras.metrics.Mean(name="loss")
+        self.mae_metric = tf.keras.metrics.MeanAbsoluteError(name="mae")
+
+    @tf.function
+    def train_step(self, data):
+        inputs, targets = data
 
 
+        with tf.GradientTape() as tape:
+            logits = self(inputs)
+            loss = self.loss(targets, logits)
 
+        trainable_vars = self.trainable_variables
+        grads = tape.gradient(loss, trainable_vars)
+        self.optimizer.apply_gradients(zip(grads, trainable_vars))
 
+        self.loss_tracker.update_state(loss)
+        self.mae_metric.update_state(logits, targets)
+        return {"loss": self.loss_tracker.result(), "mae": self.mae_metric.result()}
 
-#def loss_fn():
-    # L2 loss
-
-
+    @property
+    def metrics(self):
+        # We list our `Metric` objects here so that `reset_states()` can be
+        # called automatically at the start of each epoch
+        # or at the start of `evaluate()`.
+        # If you don't implement this property, you have to call
+        # `reset_states()` yourself at the time of your choosing.
+        return [self.loss_tracker, self.mae_metric]
 
 
 

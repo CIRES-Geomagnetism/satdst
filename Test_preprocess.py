@@ -59,6 +59,8 @@ class Test_data_windowing(unittest.TestCase):
 
         trainALL, valALL, testALL = split_train_test(self.filename, train_ratio, val_ratio, self.all_col)
 
+        self.train_col= ["Bx", "By", "Bz", "Sv", "Den"]
+
 
 
 
@@ -67,13 +69,13 @@ class Test_data_windowing(unittest.TestCase):
     def test_setup_WindowGenerator(self):
 
         input_width = 30
-        label_width = 30
+        label_width = 1
         shift = 1
         label_columns = ["Dst"]
 
 
 
-        wg = WindowGenerator(input_width, label_width, shift,
+        wg = WindowGenerator(input_width, label_width, shift, self.train_col,
                         self.traindf, self.valdf, self.testdf, label_columns)
 
 
@@ -88,6 +90,8 @@ class Test_data_windowing(unittest.TestCase):
         dataset = tf.keras.utils.timeseries_dataset_from_array(
             input_data, target_data, sequence_length=30)
 
+
+
         for inputs in dataset:
 
             assert np.array_equal(inputs[0], input_data[:30])
@@ -96,18 +100,18 @@ class Test_data_windowing(unittest.TestCase):
 
     def test_make_dataset(self):
 
-        input_width = 32
+        input_width = 30
         label_width = 1
         shift = 1
         label_columns = ["Dst"]
 
 
-        wg = WindowGenerator(input_width, label_width, shift,
+        wg = WindowGenerator(input_width, label_width, shift, self.train_col,
                              self.traindf, self.valdf, self.testdf, label_columns)
 
         train_set = wg.make_dataset(self.traindf)
 
-        print(train_set)
+
         print(train_set.element_spec)
 
     def test_property_train(self):
@@ -117,15 +121,20 @@ class Test_data_windowing(unittest.TestCase):
         label_columns = ["Dst"]
 
 
-        wg = WindowGenerator(input_width, label_width, shift,
+        wg = WindowGenerator(input_width, label_width, shift, self.train_col,
                              self.traindf, self.valdf, self.testdf, label_columns)
 
         trainSet = wg.train
 
 
-        for example_inputs, example_labels in trainSet.take(1):
+        for inputs, targets in trainSet.take(1):
+
+            example_inputs, example_labels = inputs
             print(f"Inputs shape (batch, time, features): {example_inputs.shape}")
             print(f"Labels shape (batch, time, features): {example_labels.shape}")
+            print(f"Targets shape (batch, time, features): {targets.shape}")
+
+
 
 
 
